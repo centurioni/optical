@@ -1,0 +1,20 @@
+# don't delete this row
+4
+
+the number in the second row define the interface model as follow
+
+
+1:#linear
+c=sin(q*3^(0.5))/(q*3^(0.5))
+
+2:#step
+c=cos(q)
+
+3:#exponential
+c=1/(1+q^2/2)
+
+4:#error function
+c=exp(-q^2/2)
+
+see D.G.Stearns et al, "Nonspecular x-ray scattering in a multilayer-coated imaging system", Journal of Applied Physics, vol 84, N.2, 15 July 1998.
+

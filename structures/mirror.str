@@ -1,0 +1,5 @@
+Mirror
+TopLayer,n/air.in3,Not_selected,Not_selected,100,0,0,0,0,0
+Glass,n/glass.in3,Not_selected,Not_selected,100,0,0,10000000,1,0
+Aluminium,n/Aluminum.in3,Not_selected,Not_selected,100,0,0,10000,0,0
+BottomLayer,n/air.in3,Not_selected,Not_selected,100,0,0,0,0,0
