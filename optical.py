@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 
 #Optical 
-version="1.13"
+version="1.14-rc"
 year=2022
 #Copyright (C) 2005-2022  Emanuele Centurioni
 #E-mail: centurioni@bo.imm.cnr.it
