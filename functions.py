@@ -103,7 +103,7 @@ def EMA(multilayer):
             n.append(0)
             k.append(0)
             if fr3 == 0:#just 2 mediums
-                n[2],k[2]=nt,kt
+                n[2],k[2]=nt,kt#just to put some data and use EMA3. Because fraction is zero these data have not influence.
             else:#O.K. 3 mediums
                 n[2],k[2]=ReadIn3(layer.file3)
 
@@ -271,7 +271,7 @@ def sortRemoveDupes(lst):
     return lst
 
 def EMA3(n, fr):
-    #effective medium approximation 3 medium 
+    #bruggeman effective medium approximation 3 medium 
     e1,e2,e3=n[0]**2,n[1]**2,n[2]**2
     f1,f2,f3=fr[0]/100.0,fr[1]/100.0,fr[2]/100.0
     nguess=f1*n[0]+f2*n[1]+f3*n[2]
@@ -348,6 +348,18 @@ def SavePoyntingFlux(lam,F):
         record = record+str(lam[i])+" "
         record = record+str(F[i]*100)+" "
         record = record+"\n"
+        out_file.write(record)
+    out_file.close()
+
+def SaveFluxProfile(E):
+    #save energy flux profile in multlayer 
+    out_file=open("Flux_profile.dat","w")
+    out_file.write("#Depth (nm)      E(%)"+"\r\n")
+    for i in range(len(E)):
+        record = ""
+        record = record+str(E[i][0]/10.0)+" "
+        record = record+str(E[i][1]*100)+" "
+        record = record+"\r\n"
         out_file.write(record)
     out_file.close()
 

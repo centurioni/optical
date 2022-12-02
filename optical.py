@@ -99,6 +99,8 @@ class MainFrame(wx.Frame):#Frame principale che contiene tutto
         self.btn_alpha.Bind(wx.EVT_BUTTON, self.on_btn_alpha)
         self.btn_poynting = wx.Button(panel1, -1, 'Poynting')
         self.btn_poynting.Bind(wx.EVT_BUTTON, self.on_btn_poynting)
+        self.btn_energy_profile = wx.Button(panel1, -1, 'E Profile')
+        self.btn_energy_profile.Bind(wx.EVT_BUTTON, self.on_btn_energy_profile)
         self.btn_thick_det = wx.Button(panel1, -1, 'Thick det')#Oggetto pulsante associato al panel 1
         self.btn_thick_det.Bind(wx.EVT_BUTTON, self.on_btn_thick_det)
         self.btn_chi_test = wx.Button(panel1, -1, 'Chi test')
@@ -122,6 +124,7 @@ class MainFrame(wx.Frame):#Frame principale che contiene tutto
         sizer.Add((-1, -1), 1)
         sizer.Add(self.btn_alpha, 0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(self.btn_poynting, 0,wx.ALIGN_CENTER|wx.ALL,3)
+        sizer.Add(self.btn_energy_profile, 0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(self.btn_thick_det, 0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(self.btn_chi_test, 0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(self.btn_compute, 0,wx.ALIGN_CENTER|wx.ALL,3)
@@ -193,6 +196,8 @@ class MainFrame(wx.Frame):#Frame principale che contiene tutto
         self.StDev=1.0
         self.PlotPoints=400
         Fi=0
+        self.wavelength_profile=500
+        self.points_profile=100
 
         self.CurDir=getcwd()
         self.loadconf()
@@ -472,6 +477,44 @@ class MainFrame(wx.Frame):#Frame principale che contiene tutto
         #self.dlg_poynting.load(0)
         self.dlg_poynting.ShowModal()
 
+    def on_btn_energy_profile(self, event):
+        #compute light energy flux profile for a single wavelength
+        error=False
+        if not self.multilayer.lmin <= self.wavelength_profile <= self.multilayer.lmax:self.wavelength_profile=self.multilayer.lmin
+        dlg = wx.TextEntryDialog(self, 'Please choose wavelength and number of points / layer', 'Energy flux depth profile calculation', str(self.wavelength_profile)+" , "+str(self.points_profile))
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                answer = dlg.GetValue()
+                Fi=float(self.txt_angle.GetValue())
+                Fi=pi*Fi/180.0
+                self.wavelength_profile,self.points_profile=float(answer.split(",")[0]),int(answer.split(",")[1])
+                if self.multilayer.lmin <= self.wavelength_profile <= self.multilayer.lmax:
+                    lam=[self.wavelength_profile]
+                    structure=PrepareList(self.multilayer,lam)
+                    E=[]
+                    CumThick=0.0
+                    for layer in self.multilayer.layer[1:-1]:#exclude top and bottom layer
+                        thick=float(layer.thickness)
+                        j=self.multilayer.layer.index(layer)
+                        for i in range(self.points_profile-1):
+                            x=i*1.0/(self.points_profile-1)
+                            A=ComputeFlux(structure,lam,Fi,j,x)
+                            E.append([CumThick+x*thick,A[0]])
+                        CumThick=CumThick+thick
+                    A=ComputeFlux(structure,lam,Fi,j,1)
+                    E.append([CumThick,A[0]])
+                    SaveFluxProfile(E)
+                else:error=True
+        finally:
+            dlg.Destroy()
+        if error:
+            dlg = wx.MessageDialog(self, 'Wavelength is out of range !',
+              ' ', wx.OK | wx.ICON_INFORMATION)
+            try:
+                dlg.ShowModal()
+            finally:
+                dlg.Destroy()
+
     def on_btn_alpha(self, event):
         dlg = wx.TextEntryDialog(self, 'Layer', 'Select layer (top layer = 1)', '1')
         try:
@@ -584,7 +627,7 @@ class MainFrame(wx.Frame):#Frame principale che contiene tutto
 
         if len(self.multilayer.layer)>2:
             self.btn_poynting.Enable(True)
-            #self.btnEFluxProfile.Enable(True)
+            self.btn_energy_profile.Enable(True)
             if len(self.experiment.data)>0:
                 self.btn_thick_det.Enable(True)
                 self.btn_chi_test.Enable(True)
@@ -595,6 +638,7 @@ class MainFrame(wx.Frame):#Frame principale che contiene tutto
                 self.btn_alpha.Enable(False)
         else:
             self.btn_poynting.Enable(False)
+            self.btn_energy_profile.Enable(False)
             #self.btnEFluxProfile.Enable(False)
             self.btn_thick_det.Enable(False)
             self.btn_chi_test.Enable(False)
