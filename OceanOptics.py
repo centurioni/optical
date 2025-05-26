@@ -1,6 +1,6 @@
 #ADC1000USB and USB4000 Ocean Optics USB driver
-#Copyright (C) 2015  Emanuele Centurioni
-#E-mail: centurioni@bo.imm.cnr.it
+#Copyright (C) 2015-2025  Emanuele Centurioni
+#E-mail: emanuele@centu.it
 
 import time
 import usb.core
@@ -23,13 +23,14 @@ class ADC1000USB:
         self.slave=channel(self,wave_cal=[],reg=[6,7,8,9],ch=1,high_cut=1100)
         self.int_time_min=3#ms
         self.int_time_max=65535#ms
+        self.time_unit="ms"
         self.transition_cut=680# wavelenght cut between master and slave (nm)
         self.maxcount=4096
     def set_int_time(self):#int time is in milliseconds on ADC1000USB
         MSB,LSB=HiLow(self.int_time)
         self.usb.write(0x02,chr(0x02)+chr(LSB)+chr(MSB))
     def getspectra(self):
-        if self.last_int_time <> self.int_time:
+        if self.last_int_time != self.int_time:
             self.set_int_time()
             self.last_int_time = self.int_time
         self.master.getspectra()
@@ -48,7 +49,7 @@ class ADC1000USB:
             string=""
             for r in ret[2:]:
                 string=string+chr(r)
-            print i,string
+            print(i,string)
 
 class channel():
     def __init__(self,parent,wave_cal=[],reg=[],ch=0,low_cut=0,high_cut=2000):
@@ -69,14 +70,14 @@ class channel():
             ret = self.parent.usb.read(0x87,64)
             string=""
             for r in ret[2:]:
-                if r <> 0: string=string+chr(r)
+                if r != 0: string=string+chr(r)
             self.wave_cal.append(float(string))
     def requestspectra(self):
         self.parent.usb.write(0x02,chr(0x0B)+chr(self.ch)+chr(0))#select channel
         try:
             self.parent.usb.write(0x02,chr(0x09))#+chr(1))#+chr(i)
         except:
-            print "request except"
+            print("request except")
             self.readspectra()
             self.parent.usb.write(0x02,chr(0x09))
     def readspectra(self):
@@ -96,8 +97,8 @@ class channel():
             self.data.append(array(s))
             self.data=self.data[-self.parent.avg:]
         except:
-            print "not ready"
-            print self.ch
+            print("not ready")
+            print(self.ch)
         del self.spectra[:]
         a=self.data[0]+0
         for d in self.data[1:]:
@@ -114,7 +115,7 @@ class channel():
         self.red_res()
     def red_res_and_cut(self):#reduce resolution and number of points using boxcar
         del self.counts[:]
-        k=len(self.spectra)/(self.parent.boxcar*2+1)
+        k=len(self.spectra)//(self.parent.boxcar*2+1)
         #T=T[:k*(r*2+1)]
         for i in range(self.parent.boxcar,len(self.spectra[:k*(self.parent.boxcar*2+1)]),self.parent.boxcar*2+1):
             s=0.0
@@ -134,7 +135,7 @@ class USB4000:
     def __init__(self,int_time=20,avg=4,boxcar=5,run=False,lock=False,wave_cal=[]):
         self.usb = usb.core.find(idVendor=0x2457, idProduct=0x1022)
         self.usb.write(0x01,chr(0x01))#Initialize Spectrometer
-        self.int_time=int_time#milliseconds
+        self.int_time=int_time#microseconds
         self.last_int_time=0
         self.avg=avg#number of averages
         self.boxcar=boxcar
@@ -144,20 +145,26 @@ class USB4000:
         self.spectra=[]#averaged spectra
         self.counts=[]#resolution reduced spectra (boxcar)
         self.wave_cal=wave_cal#wave calibration data
-        self.int_time_min=1#ms
-        self.int_time_max=65535#ms
+        # in teoria da specifica l'integration time va da 10 a 65.535.000 us ma fuori dal range sotto non funziona o fa cose strane
+        self.int_time_min=255#us
+        self.int_time_max=3800#us
+        self.time_unit="us"
         self.low_cut=200
         self.high_cut=1000
         self.maxcount=32768
         self.ReadCalibration()#read wave calibration data from spectrometer's EEPROM
     def set_int_time(self):#int time is in microseconds on USB4000
-        MSW=self.int_time*1000/65536
-        LSW=self.int_time*1000-65536*MSW
+        MSW=self.int_time//65536
+        LSW=self.int_time-65536*MSW
+        #MSW=0
+        #LSW=self.int_time
         LSW_MSB,LSW_LSB=HiLow(LSW)
+        LSW_LSB=255# se il valore è minore di 128 lo spettro si azzera, bug USB4000 ?
         MSW_MSB,MSW_LSB=HiLow(MSW)
         self.usb.write(0x01,chr(0x02)+chr(LSW_LSB)+chr(LSW_MSB)+chr(MSW_LSB)+chr(MSW_MSB))
+        #print(LSW_LSB,LSW_MSB,MSW_LSB,MSW_MSB)
     def getspectra(self):
-        if self.last_int_time <> self.int_time:
+        if self.last_int_time != self.int_time:
             self.set_int_time()
             self.last_int_time = self.int_time
         self.requestspectra()
@@ -166,7 +173,7 @@ class USB4000:
             self.data.append(array(s))
             self.data=self.data[-self.avg:]
         except:
-            print "not ready"
+            print("not ready")
         self.lock=True
         del self.spectra[:]
         a=self.data[0]+0
@@ -188,7 +195,7 @@ class USB4000:
         try:
             self.usb.write(0x01,chr(0x09))
         except:
-            print "request except"
+            print("request except")
             self.readspectra()
             self.usb.write(0x01,chr(0x09))
     def readspectra(self):
@@ -205,7 +212,7 @@ class USB4000:
         return(s)
     def red_res(self):
         del self.counts[:]
-        k=len(self.spectra)/(self.boxcar*2+1)
+        k=len(self.spectra)//(self.boxcar*2+1)
         for i in range(self.boxcar,len(self.spectra[:k*(self.boxcar*2+1)]),self.boxcar*2+1):
             s=0.0
             for j in range(i-self.boxcar,i+self.boxcar+1):
@@ -218,22 +225,22 @@ class USB4000:
             ret = self.usb.read(0x81,64)
             string=""
             for r in ret[2:]:
-                if r <> 0: string=string+chr(r)
+                if r != 0: string=string+chr(r)
             self.wave_cal.append(float(string))
     def querystatus(self):
         self.usb.write(0x01,chr(0xFE))
         ret = self.usb.read(0x81,64)
-        print "Number of pixel = "+str(ret[0]+ret[1]*256)
+        print("Number of pixel = "+str(ret[0]+ret[1]*256))
         LSW = ret[2]+ret[3]*256
         MSW = ret[4]+ret[5]*256
-        print "Integration time = "+str(LSW+MSW*256)+" us"
-        print "Lamp enable = "+str(ret[6])
-        print "Trigger mode = "+str(ret[7])
-        print "Spectral acquisition status = "+str(ret[8])
-        print "Packets in spectra = "+str(ret[9])
-        print "Power down = "+str(ret[10])
-        print "Packets count = "+str(ret[11])
-        print "USB communication speed = "+str(ret[14])
+        print("Integration time = "+str(LSW+MSW*256)+" us")
+        print("Lamp enable = "+str(ret[6]))
+        print("Trigger mode = "+str(ret[7]))
+        print("Spectral acquisition status = "+str(ret[8]))
+        print("Packets in spectra = "+str(ret[9]))
+        print("Power down = "+str(ret[10]))
+        print("Packets count = "+str(ret[11]))
+        print("USB communication speed = "+str(ret[14]))
     def QueryInformation(self):
         for i in range(19):
             self.usb.write(0x01,chr(0x05)+chr(i))
@@ -241,7 +248,7 @@ class USB4000:
             string=""
             for r in ret[2:]:
                 string=string+chr(r)
-            print i,string
+            print(i,string)
 
 class FakeSpectrometer:
     def __init__(self,int_time=20,avg=4,boxcar=3,run=False,lock=False,wave_cal=[1.7859480E02,2.1551852e-01,-4.1099884e-06,-5.2138449e-10]):
@@ -257,12 +264,13 @@ class FakeSpectrometer:
         self.wave_cal=wave_cal#wave calibration data
         self.int_time_min=1#ms
         self.int_time_max=10000#ms
+        self.time_unit="ms"
         self.low_cut=200
         self.high_cut=1000
         self.maxcount=10000
         self.time0=time.time()
     def set_int_time(self):#int time is in microseconds on USB4000
-        MSW=self.int_time*1000/65536
+        MSW=self.int_time*1000//65536
         LSW=self.int_time*1000-65536*MSW
         LSW_MSB,LSW_LSB=HiLow(LSW)
         MSW_MSB,MSW_LSB=HiLow(MSW)
@@ -278,7 +286,7 @@ class FakeSpectrometer:
         self.lock=False
     def red_res(self):
         del self.counts[:]
-        k=len(self.spectra)/(self.boxcar*2+1)
+        k=len(self.spectra)//(self.boxcar*2+1)
         #T=T[:k*(r*2+1)]
         for i in range(self.boxcar,len(self.spectra[:k*(self.boxcar*2+1)]),self.boxcar*2+1):
             s=0.0
@@ -287,7 +295,7 @@ class FakeSpectrometer:
             self.counts.append([self.spectra[i][0],s/(self.boxcar*2+1)])
 
 def HiLow(x):
-    Hi=x/256
+    Hi=x//256
     Low=x-256*Hi
     return Hi, Low
 

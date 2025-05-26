@@ -3,8 +3,8 @@
 #Optical 
 version="1.14-rc"
 year=2022
-#Copyright (C) 2005-2022  Emanuele Centurioni
-#E-mail: centurioni@bo.imm.cnr.it
+#Copyright (C) 2005-2025  Emanuele Centurioni
+#E-mail: emanuele@centu.it
 
 spectro=False#set True to enable OceanOptics driver and spectra acquisition interface
 
@@ -13,7 +13,7 @@ matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
 from matplotlib.figure import Figure
-if spectro:from OceanOptics import *#remove comment to use spectrometer
+if spectro:from OceanOptics import *
 
 import wx
 from functions import *

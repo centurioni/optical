@@ -1,7 +1,7 @@
 import wx
 #from USB4000_fake import *
-#import wx.lib.plot as plot
-import plot
+import wx.lib.plot as plot
+#import plot
 from functions import *
 
 def lbox(label,oggetto,pannello):
@@ -42,7 +42,7 @@ class ExperimentPanel(wx.Panel):
         sizer.Add((-1, -1), 1)
         sizer.Add(self.RadioBox_show, 0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add((-1, -1), 1)
-        sizer.Add(lbox("Int time (ms)",self.txt_int_time,panel1),0,wx.ALIGN_CENTER|wx.ALL,3)
+        sizer.Add(lbox("Int time ("+self.parent.spectrometer.time_unit+")",self.txt_int_time,panel1),0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(lbox("Average",self.txt_avg,panel1),0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(lbox("Boxcar",self.txt_boxcar,panel1),0,wx.ALIGN_CENTER|wx.ALL,3)
         sizer.Add(self.btn_apply, 0,wx.ALIGN_CENTER|wx.ALL,3)
@@ -143,7 +143,7 @@ class ExperimentPanel(wx.Panel):
             self.RadioBox_show.Enable(False)
         else:
             self.RadioBox_show.Enable(True)
-            if self.RadioBox_show.GetSelection() <> 0:
+            if self.RadioBox_show.GetSelection() != 0:
                 self.btn_store.Enable(True)
                 self.btn_save.Enable(True)
             else:
